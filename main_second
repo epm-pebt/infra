@@ -1,0 +1,222 @@
+#####vpc#################################################
+data "aws_availability_zones" "available" {}
+
+
+resource "aws_vpc" "test_music-app" {
+  cidr_block           = "10.0.0.0/16"
+  instance_tenancy     = "default"
+  enable_dns_support   = true
+  enable_dns_hostnames = true
+
+  tags = {
+    Name = "test-VPC-music-app"
+  }
+}
+
+resource "aws_subnet" "test_Public-subnet" {
+  vpc_id                  = aws_vpc.test_music-app.id
+  cidr_block              = "10.0.1.0/24"
+  availability_zone       = "us-east-1a"
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name = "test_Public_Subnet"
+  }
+}
+
+resource "aws_subnet" "test_Private-subnet" {
+  vpc_id            = aws_vpc.test_music-app.id
+  cidr_block        = "10.0.2.0/24"
+  availability_zone = "us-east-1b"
+
+
+  tags = {
+    Name = "test_Privat_Subnet"
+  }
+}
+#-----------------------------------------------------------
+resource "aws_internet_gateway" "test_igw" {
+  vpc_id = aws_vpc.test_music-app.id
+
+  tags = {
+    Name = "test Public IGW"
+  }
+}
+#-------------------------------------------------------
+resource "aws_eip" "test_nat_eip" {
+  domain = "vpc"
+  tags = {
+    Name = "test NAT EIP"
+  }
+}
+
+resource "aws_nat_gateway" "test_nat_gateway" {
+  allocation_id = aws_eip.test_nat_eip.id
+  subnet_id     = aws_subnet.test_Public-subnet.id
+
+  tags = {
+    Name = "test NAT Gateway"
+  }
+}
+#-------------------------------------------------------------
+resource "aws_route_table" "test_nat-gateway-rt" {
+
+
+  vpc_id = aws_vpc.test_music-app.id
+
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.test_nat_gateway.id
+  }
+
+  tags = {
+    Name = "test Route Table for NAT Gateway"
+  }
+}
+resource "aws_route_table_association" "test_Nat-Gateway-RT-Association" {
+
+  #  Private Subnet ID for adding this route table to the DHCP server of Private subnet
+  subnet_id = aws_subnet.test_Private-subnet.id
+
+  # Route Table ID
+  route_table_id = aws_route_table.test_nat-gateway-rt.id
+}
+#------------------------------------------------------------
+resource "aws_route_table" "test_Public-subnet" {
+  vpc_id = aws_vpc.test_music-app.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.test_igw.id
+
+  }
+
+  tags = {
+    Name = "test Public Route Table"
+  }
+}
+
+resource "aws_route_table_association" "test_IG-public-subnet" {
+  subnet_id      = aws_subnet.test_Public-subnet.id
+  route_table_id = aws_route_table.test_Public-subnet.id
+}
+#--------------------------------------------------------------
+
+resource "aws_key_pair" "test_aws" {
+  key_name   = "aws"
+  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC3g+m7+AfHTf0wZksYlDWMXP6vwu6n35KTgyi+3v6dSEI3kYZOdPYNIisfs58BZCEDh7iD0A6tYF8TUUuL8v5NgcEg9fN7bCu/LXfG9mbcdz/iYxrME3aLW/1nuuTbwKVJcxKS17Z4wNUrC3WpUuiMnv/LqjQWJIXCsDLYnaZtyksRmKgyMgsokIuktA2yoZbW0MAvgqwn0FgIkckluMHnNdFhWilsEBdyWl/N1a8TZntrN0NR+9H1reUUr0tc93MK9aW60pSO6nRExC1rNEEy4TKvcy6uyTd3FejghKAoa5rtedX65jC2atCv3a2pqt/j8V7V8cndAamlkxKzzA1NUOwgrdJxJUeNwX5dVUCCsyqkOR9s2oinJTcMcHyCtT8a/1A9ug80/BSnpQgc9kRIQ3Qbd5BXpqnEYCNOMKlLfDBsLlpy6qXnvq4kxzSqirDPwEIxBxqXNOu136Dtp6O9k3f+zsfbevujhhncm73+XHb6LB4qB+OB40BMvSw7B8HAQffJxGH9MD9s6yJm4GF59l7RuNDq+td02f2X9XylJ9acEI8pzSDjZ5z1g70a5g9eWLerEyWOBuPvYdPWoILrnChyoVWQSMQu06JOUVQOI2CRWr8oimTFHFoBD6gD45O78OaSzssEkT/M2puOtg/kvsScZ4HBJ5nH7bsmch1gkw== user@PC-102985"
+}
+
+#--------------------------------------------------------------
+
+resource "aws_instance" "test_web_server" {
+  ami           = "ami-053b0d53c279acc90"
+  instance_type = "t3.micro"
+  key_name = aws_key_pair.test_aws.id
+  subnet_id              = aws_subnet.test_Public-subnet.id
+  vpc_security_group_ids = [aws_security_group.test_webserver.id]
+  user_data              = file("user_data.sh")
+  connection {
+    type        = "ssh"
+    user        = "ubuntu"  # user for connection
+    private_key = file("/var/lib/jenkins/.ssh/aws")
+    host        = self.public_ip  # user public ip
+  }
+  provisioner "file" {
+    source      = "./docker-compose.yml"  # path to local file 
+    destination = "/home/ubuntu/docker-compose.yml"  # path need to copy
+  }
+
+  tags = {
+    Name = "test_Web_server"
+  }
+}
+
+resource "aws_security_group" "test_webserver" {
+  name        = "webserver"
+  description = "Allow TLS inbound traffic"
+  vpc_id      = aws_vpc.test_music-app.id
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "test_webserver"
+  }
+}
+#---------------------------------------------------------
+resource "aws_security_group" "test_rds_security_group" {
+  name_prefix = "rds-sg-"
+
+  vpc_id = aws_vpc.test_music-app.id
+
+  ingress {
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]  
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+#-----------------------------------------------------------------
+
+resource "aws_db_subnet_group" "test_private_subnets" {
+  name       = "test-private-db-subnets"
+  subnet_ids = [aws_subnet.test_Private-subnet.id, aws_subnet.test_Public-subnet.id] 
+}
+#---------------------------------------------------------------
+resource "aws_db_instance" "test_postgres_db" {
+  identifier           = "my-postgres-db" 
+  db_subnet_group_name = aws_db_subnet_group.test_private_subnets.id
+  engine               = "postgres"
+  instance_class       = "db.t3.micro"    
+  allocated_storage    = 20               
+  storage_type         = "gp2"
+  username             = "postgres"        
+  password             = "postgres"     
+  db_name              = "test_db_music_app"   
+  port                 = 5432            
+  parameter_group_name = "default.postgres15"  # Параметры базы данных PostgreSQL
+  multi_az             = false             # Устанавливаем в true для мультизонного развертывания
+  vpc_security_group_ids = [aws_security_group.test_rds_security_group.id]  # Список ID созданных security group для доступа к базе данных
+  publicly_accessible    = true
+  skip_final_snapshot = false
+}
+#-----------------------------------------------------------------------------
+output "instance_public_ip" {
+  description = "Public IP address of the EC2 instance"
+  value       = aws_instance.test_web_server.public_ip
+}
+output "address_db" {
+  description = "endpoint database"
+  value       = aws_db_instance.test_postgres_db.endpoint
+}
+#------------------------------------------------------------------------------

@@ -1,0 +1,33 @@
+pipeline {
+    agent any
+    environment {
+        AWS_DEFAULT_REGION = 'us-east-1'
+    }
+    tools {
+       terraform 'Terraform'
+    }
+    stages {
+        stage('Git checkout'){
+            steps{
+                git branch: 'main', credentialsId: 'GitLab', url: 'git@git.epam.com:mykhailo_kurian/infrastructure_music_app.git'
+
+            }
+        }
+        stage('Terraform apply'){
+            steps{
+                withCredentials([string(credentialsId: 'Access_Key_Id', variable: 'AWS_ACCESS_KEY_ID'), 
+                string(credentialsId: 'Secret_Access_Key', variable: 'AWS_SECRET_ACCESS_KEY')]){ 
+                    sh '''
+                        cd ./state/
+                        terraform init && terraform apply -auto-approve
+                       '''
+                    sh 'terraform init && terraform apply --auto-approve'
+                    sh "terraform output address_db  | tr -d '\"' > /var/lib/jenkins/output_terraform/address_db.txt"
+                    sh "terraform output instance_public_ip  | tr -d '\"' > /var/lib/jenkins/output_terraform/instance_public_ip.txt"
+                    
+                }
+            }
+        }
+        
+    }
+}

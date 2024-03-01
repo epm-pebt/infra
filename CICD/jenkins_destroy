@@ -1,0 +1,26 @@
+pipeline {
+    agent any
+    environment {
+        AWS_DEFAULT_REGION = 'us-east-1'
+    }
+    tools {
+       terraform 'Terraform'
+    }
+    stages {
+        stage('Git checkout'){
+            steps{
+                git branch: 'main', credentialsId: 'GitLab', url: 'git@git.epam.com:mykhailo_kurian/infrastructure_music_app.git'
+
+            }
+        }
+        stage('Terraform apply'){
+            steps{
+                withCredentials([string(credentialsId: 'Access_Key_Id', variable: 'AWS_ACCESS_KEY_ID'), 
+                string(credentialsId: 'Secret_Access_Key', variable: 'AWS_SECRET_ACCESS_KEY')]){ 
+                    sh 'terraform init && terraform destroy --auto-approve'                    
+                }
+            }
+        }
+        
+    }
+}
