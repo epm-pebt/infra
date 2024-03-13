@@ -1,4 +1,4 @@
-resource "aws_security_group" "Webserver" {
+resource "aws_security_group" "this" {
   name        = var.name
   vpc_id      = var.vpc_id
 
@@ -22,8 +22,9 @@ resource "aws_security_group" "Webserver" {
     cidr_blocks = ["0.0.0.0/0"]
   }
  }
-  tags = {
-    Name = var.name
-  }
+  tags = merge(
+    { Name = var.name },
+    var.tags
+  )
 
 }

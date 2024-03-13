@@ -1,2 +1,6 @@
-# configuring docker and aws as providers
-provider "aws" {}
+# //////////////////////////////
+# PROVIDERS
+# //////////////////////////////
+provider "aws" {
+  region     = "us-east-1"
+}

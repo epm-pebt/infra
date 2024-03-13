@@ -1,19 +1,11 @@
 variable "name" {
-  description = "Webserver"
+  description = "Name of the resource to create"
   type        = string
 }
-
-# variable "description" {
-#   description = "Allow 80, 3000, 22, 5432"
-#   type        = string
-# }
-
 variable "vpc_id" {
   description = "ID VPC, in create Security Group"
   type        = string
 }
-
-
 variable "ingress_port" {
   description = "inbound trafic"
   type        = list(number)
@@ -24,5 +16,8 @@ variable "egress_port" {
   type        = list(number)
   default = [0]
 }
-#=========================================
-
+variable "tags" {
+  description = "Additional tags for the security group"
+  type        = map(string)
+  default     = {}
+}

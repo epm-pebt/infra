@@ -1,19 +1,25 @@
 
 resource "aws_db_instance" "db_instance" {
-  identifier           = var.indentifier
+  identifier           = var.identifier
   db_subnet_group_name = var.db_subnet_group_name
-  engine               = "postgres"
-  engine_version = "12.15"
-  instance_class       = "db.t2.micro"
-  allocated_storage    = 20
-  storage_type         = "gp2"
+  engine               = var.engine
+  engine_version       = var.engine_version
+  instance_class       = var.instance_class
+  allocated_storage    = var.allocated_storage
+  storage_type         = var.storage_type
   username             = var.username
   password             = var.password
-  db_name              = "test_db_music_app"
-  port                 = 5432
-  #parameter_group_name = "default.postgres15"
-  multi_az             = false
+  db_name              = var.db_name
+  port                 = var.port
+  multi_az             = var.multi_az
   vpc_security_group_ids = var.vpc_security_group_ids
-  publicly_accessible    = false
-  skip_final_snapshot = false
+  publicly_accessible    = var.publicly_accessible
+  skip_final_snapshot    = var.skip_final_snapshot
+  final_snapshot_identifier = var.final_snapshot_identifier
+
+  tags = merge(
+    { Name = "${var.identifier}-db-instance" },
+    var.tags
+  )
+
 }
