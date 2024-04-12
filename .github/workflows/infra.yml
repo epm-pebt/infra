@@ -1,0 +1,28 @@
+name: Infra Ecobytes
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Create or destroy infrastructure"
+        required: true
+        type: choice
+        options:
+          - create
+          - destroy
+      environment:
+        description: "Chose infrascture environment to be created"
+        required: true
+        type: choice
+        options:
+          - dev
+          # - prod
+
+jobs:
+  install-infra:
+    if: github.event.inputs.action == 'create'
+    uses: ./.github/workflows/infra-create.yaml
+
+  uninstall-infra:
+    if: github.event.inputs.action == 'destroy'
+    uses: ./.github/workflows/infra-destroy.yaml
