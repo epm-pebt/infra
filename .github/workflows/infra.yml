@@ -18,6 +18,9 @@ on:
           - dev
           # - prod
 
+permissions:
+  id-token: write
+
 jobs:
   install-infra:
     if: github.event.inputs.action == 'create'
