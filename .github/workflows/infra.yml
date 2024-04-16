@@ -17,6 +17,7 @@ on:
         options:
           - dev
           # - prod
+  push:
 
 jobs:
   install-infra:
