@@ -34,6 +34,10 @@ jobs:
             
         - name: 'Terraform Validate'
           run: terraform validate
+
+        - name: 'Terraform Destroy Plan'
+          if: github.event_name == 'workflow_dispatch'
+          run: terraform plan -destroy -var-file="config/${{ github.event.inputs.environment}}.tfvars"    
         
         - name: 'Terraform Destory'
           run: terraform destroy -var-file="config/${{ github.event.inputs.environment}}.tfvars" -auto-approve
