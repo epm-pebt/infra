@@ -17,7 +17,7 @@ on:
           - create
           - destroy
       environment:
-        description: "Chose infrascture environment to be created"
+        description: "Chose infrastructure environment to be created"
         required: true
         type: choice
         options:
