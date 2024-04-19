@@ -40,7 +40,7 @@ variable "bucket_frontend_name" {
 
 variable "cidr" {
   description = "(Optional) The IPv4 CIDR block for the VPC. CIDR can be explicitly set or it can be derived from IPAM using `ipv4_netmask_length` & `ipv4_ipam_pool_id`"
-  default     = "10.0.0.0/16"
+  default = "10.0.0.0/16"
 }
 
 variable "public_subnet_cidrs" {
@@ -49,7 +49,7 @@ variable "public_subnet_cidrs" {
   default     = []
 }
 
-variable "private_subnet_cidrs" {
+variable "private_subnet_cidrs"{
   description = "A list of private subnets inside the VPC"
   type        = list(string)
   default     = []
@@ -65,32 +65,32 @@ variable "security_group_name" {
 #------ Ec2 instance properties -------------------------------
 variable "instance_name" {
   description = "Name of the instance"
-  type        = string
-  default     = ""
+  type = string
+  default = ""
 }
 
 variable "ec2_key_name" {
   description = "Name of the key pair to use for the instance"
-  type        = string
-  default     = ""
+  type = string
+  default = ""
 }
 
 variable "ami" {
   description = "The AMI to use for the instance"
-  type        = string
-  default     = ""
+  type = string
+  default = ""
 }
 
 variable "instance_type" {
   description = "The type of instance to start"
-  type        = string
-  default     = ""
+  type = string
+  default = ""
 }
 
 variable "userdata" {
   description = "The user data to provide when launching the instance"
-  type        = string
-  default     = ""
+  type = string
+  default = ""
 }
 
 variable "vpc_security_group_ids" {
@@ -186,7 +186,7 @@ variable "publicly_accessible" {
 variable "skip_final_snapshot" {
   description = "Determines whether a final DB snapshot is created before the DB instance is deleted. If true is specified, no DBSnapshot is created. If false is specified, a DB snapshot is created before the DB instance is deleted"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "final_snapshot_identifier" {
