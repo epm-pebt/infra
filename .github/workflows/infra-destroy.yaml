@@ -38,5 +38,5 @@ jobs:
         - name: 'Terraform Destroy Plan'
           run: terraform plan -destroy -var-file="config/${{ github.event.inputs.environment}}.tfvars"    
         
-        - name: 'Terraform Destory'
+        - name: 'Terraform Destroy'
           run: terraform destroy -var-file="config/${{ github.event.inputs.environment}}.tfvars" -auto-approve
