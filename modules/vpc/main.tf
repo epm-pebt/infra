@@ -30,7 +30,7 @@ resource "aws_subnet" "Back_public-subnet" {
   map_public_ip_on_launch = true
 
   tags = merge(
-    { Name = "${var.name}-public-${count.index + 1}" },
+    { Name = "${var.name}-public-${count.index + 1}" }, 
     var.tags,
   )
 }
@@ -51,37 +51,37 @@ resource "aws_route_table" "Back_public-subnet" {
 }
 
 resource "aws_route_table_association" "public_routers" {
-  count          = length(aws_subnet.Back_public-subnet[*].id)
+  count = length(aws_subnet.Back_public-subnet[*].id)
   route_table_id = aws_route_table.Back_public-subnet.id
-  subnet_id      = element(aws_subnet.Back_public-subnet[*].id, count.index)
+  subnet_id      = element(aws_subnet.Back_public-subnet[*].id, count.index)  
 }
 
 #============================aws_eip=aws_nat_gateway===================================
 
-# resource "aws_eip" "nat" {
-#   count  = length(var.private_subnet_cidrs)
-#   domain = "vpc"
-#   tags = merge(
-#     { Name = "${var.name}-nat-gw-${count.index + 1}" },
-#     var.tags,
-#   )
-# }
+resource "aws_eip" "nat" {
+  count = length(var.private_subnet_cidrs)
+  domain = "vpc"
+  tags = merge(
+    { Name = "${var.name}-nat-gw-${count.index + 1}" },
+    var.tags,
+  )
+}
 
-# resource "aws_nat_gateway" "nat" {
-#   count         = length(var.private_subnet_cidrs)
-#   allocation_id = aws_eip.nat[count.index].id
-#   subnet_id     = element(aws_subnet.Back_public-subnet[*].id, count.index)
+resource "aws_nat_gateway" "nat" {
+  count = length(var.private_subnet_cidrs)
+  allocation_id = aws_eip.nat[count.index].id
+  subnet_id     = element(aws_subnet.Back_public-subnet[*].id, count.index)
 
-#   tags = merge(
-#     { Name = "${var.name}-nat-gw-${count.index + 1}" },
-#     var.tags,
-#   )
-# }
+  tags = merge(
+    { Name = "${var.name}-nat-gw-${count.index + 1}" },
+    var.tags,
+  )
+}
 #==================Private-subnet====================================================
 
 resource "aws_subnet" "Back_private-subnet" {
-  count                   = length(var.private_subnet_cidrs)
-  vpc_id                  = aws_vpc.this.id
+  count = length(var.private_subnet_cidrs)
+  vpc_id            = aws_vpc.this.id
   cidr_block              = element(var.private_subnet_cidrs, count.index)
   availability_zone       = data.aws_availability_zones.available.names[count.index + 1]
   map_public_ip_on_launch = true
@@ -93,13 +93,12 @@ resource "aws_subnet" "Back_private-subnet" {
 }
 
 resource "aws_route_table" "Back_private-subnet" {
-  count  = length(var.private_subnet_cidrs)
+  count = length(var.private_subnet_cidrs)
   vpc_id = aws_vpc.this.id
 
   route {
     cidr_block = "0.0.0.0/0"
-    # gateway_id = aws_nat_gateway.nat[count.index].id
-    gateway_id = aws_internet_gateway.back_igw.id
+    gateway_id = aws_nat_gateway.nat[count.index].id
   }
 
   tags = merge(
@@ -109,9 +108,9 @@ resource "aws_route_table" "Back_private-subnet" {
 }
 
 resource "aws_route_table_association" "Private-routes" {
-  count          = length(aws_subnet.Back_private-subnet[*].id)
+  count = length(aws_subnet.Back_private-subnet[*].id)
   route_table_id = aws_route_table.Back_private-subnet[count.index].id
-  subnet_id      = element(aws_subnet.Back_private-subnet[*].id, count.index)
+  subnet_id      = element(aws_subnet.Back_private-subnet[*].id, count.index)  
 }
 #===============================================================================
 
