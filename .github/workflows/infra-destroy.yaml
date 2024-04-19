@@ -31,12 +31,6 @@ jobs:
     
         - name: Terraform Init
           run: terraform init
-            
-        - name: 'Terraform Validate'
-          run: terraform validate
-
-        - name: 'Terraform Destroy Plan'
-          run: terraform plan -destroy -var-file="config/${{ github.event.inputs.environment}}.tfvars"    
-        
+          
         - name: 'Terraform Destroy'
           run: terraform destroy -var-file="config/${{ github.event.inputs.environment}}.tfvars" -auto-approve
