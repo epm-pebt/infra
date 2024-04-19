@@ -1,0 +1,47 @@
+name: infra-create
+
+on:
+  workflow_call:        
+
+jobs:
+  install-infra:
+    permissions:
+      id-token: write
+      contents: read
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        shell: bash
+    
+    steps:
+        - name: Check out GIT repository
+          uses: actions/checkout@v4
+    
+        - name: Install Terraform
+          uses: hashicorp/setup-terraform@v3                
+    
+        - name: Configure AWS credentials
+          uses: aws-actions/configure-aws-credentials@v4
+          with:
+            role-to-assume: ${{ vars.ROLE_ARN }}
+            role-session-name: github-actions-labsadm
+            aws-region: ${{ vars.AWS_REGION }}
+    
+        - name: Terraform Init
+          run: terraform init
+            
+        - name: 'Terraform Validate'
+          run: terraform validate
+
+        - name: 'Terraform Format'
+          run: terraform fmt -check
+
+        - name: 'Terraform Plan'
+          if: github.event_name == 'workflow_dispatch'
+          run: terraform plan -var-file="config/${{ github.event.inputs.environment}}.tfvars"
+        
+        - name: 'Terraform Apply'
+          if: github.event_name == 'workflow_dispatch'
+          run: terraform apply -var-file="config/${{ github.event.inputs.environment}}.tfvars" -auto-approve
+    
