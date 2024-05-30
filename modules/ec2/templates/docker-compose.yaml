@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  ecobites-db:
+    image: "public.ecr.aws/${ecr_registry_alias}/${ecr_registry_name}:app-${image_tag}"
+    container_name: ecobites-db-container
+    environment:
+      POSTGRES_DB: ${db_name}
+      POSTGRES_USER: ${db_username}
+      POSTGRES_PASSWORD: ${db_password}
+    ports:
+      - "5432:5432"
+    networks:
+      - ecobites-network
+    volumes:
+      - ./src/main/resources/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+
+  ecobites-backend:
+    image: "public.ecr.aws/${ecr_registry_alias}/${ecr_registry_name}:db-${image_tag}"
+    container_name: ecobites-backend-container
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://ecobites-db:5432/${db_name}
+      DB_USERNAME: ${db_username}
+      DB_PASSWORD: ${db_password}
+    ports:
+      - "8081:8081"
+    networks:
+      - ecobites-network
+    depends_on:
+      - ecobites-db
+
+networks:
+  ecobites-network:
+    driver: bridge

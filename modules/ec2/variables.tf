@@ -42,3 +42,39 @@ variable "subnet_id" {
   type        = string
   default     = null
 }
+
+variable "ecr_registry_name" {
+  description = "The ECR name to download docker image from"
+  type        = string
+  default     = null
+}
+
+variable "ecr_registry_alias" {
+  description = "The ECR alias to download docker image from"
+  type        = string
+  default     = null
+}
+
+variable "image_tag" {
+  description = "Image tag, generated with semantic release dynamically"
+  type        = string
+  # default     = "latest"
+}
+
+variable "db_username" {
+  description = "Database username"
+  type        = string
+  default     = null
+}
+
+variable "db_password" {
+  description = "Database password"
+  type        = string
+  default     = null
+}
+
+variable "db_name" {
+  description = "Database name"
+  type        = string
+  default     = null
+}

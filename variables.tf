@@ -4,6 +4,11 @@ variable "name" {
   default     = ""
 }
 
+variable "prefix" {
+  description = "Prefix for creating resources for different environments"
+  type        = string
+}
+
 variable "tags" {
   description = "Additional tags for all resources as identifier"
   type        = map(string)
@@ -105,6 +110,23 @@ variable "subnet_id" {
   default     = null
 }
 
+variable "ecr_registry_name" {
+  description = "The ECR name to download docker image"
+  type        = string
+  default     = null
+}
+
+variable "ecr_registry_alias" {
+  description = "The ECR alias to download docker image from"
+  type        = string
+  default     = null
+}
+
+variable "image_tag" {
+  description = "Image tag, generated with semantic release dynamically"
+  type        = string
+}
+
 #------ DB subnet group properties -------------------------------
 variable "db_subnet_group_name" {
   description = "The VPC DB Subnet ID group name to launch in"
@@ -199,4 +221,15 @@ variable "security_rds_group_name" {
   description = "Name of the security group to associate with"
   type        = string
 }
+
+# variable "bucket_domain_name" {
+#   description = "The DNS domain name of the S3 bucket or custom origin."
+#   type        = string
+# }
+
+# variable "origin_id" {
+#   description = "A unique identifier for the origin."
+#   type        = string
+# }
+
 
