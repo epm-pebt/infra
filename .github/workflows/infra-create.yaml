@@ -1,7 +1,17 @@
 name: infra-create
 
 on:
-  workflow_call:        
+  workflow_call:
+    inputs:
+      environment:
+        required: false
+        type: string
+      trigger_pipeline:
+        required: false
+        type: string
+      trigger_event:
+        required: false
+        type: string        
 
 jobs:
   install-infra:
@@ -17,7 +27,10 @@ jobs:
     steps:
         - name: Check out GIT repository
           uses: actions/checkout@v4
-    
+          with:
+            repository: marinaimeninnik/eco-bites-infra
+            ref: back-deployment
+           
         - name: Install Terraform
           uses: hashicorp/setup-terraform@v3                
     
@@ -27,21 +40,57 @@ jobs:
             role-to-assume: ${{ vars.ROLE_ARN }}
             role-session-name: github-actions-labsadm
             aws-region: ${{ vars.AWS_REGION }}
+
+        - name: Download image_tag from artifact
+          if: inputs.trigger_pipeline == 'Java CI with Gradle'
+          uses: actions/download-artifact@v4
+          with:
+            name: variables
+
+        - name: Set IMAGE_TAG from variables.env
+          if: inputs.trigger_pipeline == 'Java CI with Gradle'
+          run: echo "IMAGE_TAG=$(cat variables.env | cut -d'=' -f2)" >> $GITHUB_ENV
     
         - name: Terraform Init
           run: terraform init
             
-        - name: 'Terraform Validate'
+        - name: Terraform Validate
           run: terraform validate
 
-        - name: 'Terraform Format'
+        - name: Terraform Format
           run: terraform fmt -check
 
         - name: 'Terraform Plan'
-          if: github.event_name == 'workflow_dispatch'
-          run: terraform plan -var-file="config/${{ github.event.inputs.environment}}.tfvars"
+          run: |
+            if [[ "${{ inputs.trigger_pipeline }}" == "Java CI with Gradle" ]]; then
+              terraform plan -var-file="config/${{ github.event.inputs.environment}}.tfvars" -var="image_tag=${{ env.IMAGE_TAG }}"
+            elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+              terraform plan -var-file="config/${{ github.event.inputs.environment}}.tfvars"
+            fi
         
+        - name: 'Terraform Apply with Artifact'
+          if: inputs.trigger_pipeline == 'Java CI with Gradle'
+          run: terraform apply -var-file="config/${{ github.event.inputs.environment}}.tfvars" -var="image_tag=${{ env.IMAGE_TAG }}" -auto-approve
+
         - name: 'Terraform Apply'
-          if: github.event_name == 'workflow_dispatch'
-          run: terraform apply -var-file="config/${{ github.event.inputs.environment}}.tfvars" -auto-approve
-    
+          if: inputs.trigger_event == 'create'
+          run: terraform apply -var-file="config/${{ github.event.inputs.environment}}.tfvars" -auto-approve 
+
+        - name: Upload docker-compose.yaml as artifact
+          uses: actions/upload-artifact@v4
+          with:
+            name: docker-compose
+            path: modules/ec2/docker-compose.yaml
+
+        - name: Get terraform outputs
+          if: inputs.trigger_pipeline == 'Java CI with Gradle'
+          id: tf-outputs
+          run: |
+            echo "INSTANCE_ID=$(terraform output -raw instance_this_id)" | tee -a $GITHUB_ENV > tf-outputs.env
+            echo "ARTIFACT_S3_NAME=$(terraform output -raw bucket_artifact_name)" | tee -a $GITHUB_ENV >> tf-outputs.env
+
+        - name: Upload terraform outputs as artifact
+          uses: actions/upload-artifact@v4
+          with:
+            name: tf-outputs
+            path: tf-outputs.env
