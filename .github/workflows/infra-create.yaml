@@ -11,7 +11,7 @@ on:
         type: string
       trigger_event:
         required: false
-        type: string        
+        type: string
 
 jobs:
   install-infra:
@@ -28,8 +28,8 @@ jobs:
         - name: Check out GIT repository
           uses: actions/checkout@v4
           with:
-            repository: epm-pebt/infra
-            ref: CI-CD_deployment
+            repository: marinaimeninnik/eco-bites-infra
+            ref: frontend_deployment
            
         - name: Install Terraform
           uses: hashicorp/setup-terraform@v3                
@@ -41,14 +41,21 @@ jobs:
             role-session-name: github-actions-labsadm
             aws-region: ${{ vars.AWS_REGION }}
 
+        - name: Print trigger_pipeline
+          run: |
+           echo "trigger_pipeline: ${{ inputs.trigger_pipeline }}"
+           echo "trigger_event: ${{ inputs.trigger_event }}"
+        #    echo "env: ${{ github.event.inputs.environment }}"
+
         - name: Download image_tag from artifact
-          if: inputs.trigger_pipeline == 'Java CI with Gradle'
+          # if: inputs.trigger_pipeline == 'Java CI with Gradle'
+          if: ${{ inputs.trigger_event == 'deploy_backend' || inputs.trigger_event == 'deploy_frontend' }}
           uses: actions/download-artifact@v4
           with:
             name: variables
 
         - name: Set IMAGE_TAG from variables.env
-          if: inputs.trigger_pipeline == 'Java CI with Gradle'
+          if: ${{ inputs.trigger_event == 'deploy_backend' || inputs.trigger_event == 'deploy_frontend' }}
           run: echo "IMAGE_TAG=$(cat variables.env | cut -d'=' -f2)" >> $GITHUB_ENV
     
         - name: Terraform Init
@@ -61,15 +68,20 @@ jobs:
           run: terraform fmt -check
 
         - name: 'Terraform Plan'
+          # if: github.event.inputs.trigger_event == 'create'
+          if: ${{ inputs.trigger_event == 'create' }}
           run: |
-            if [[ "${{ inputs.trigger_pipeline }}" == "Java CI with Gradle" ]]; then
-              terraform plan -var-file="config/${{ github.event.inputs.environment}}.tfvars" -var="image_tag=${{ env.IMAGE_TAG }}"
-            elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-              terraform plan -var-file="config/${{ github.event.inputs.environment}}.tfvars"
-            fi
+            terraform plan -var-file="config/${{ github.event.inputs.environment}}.tfvars"
+
+# TODO: test deploy backend
+
+        - name: 'Terraform Plan with Artifact'
+          if: ${{ inputs.trigger_event == 'deploy_backend' || inputs.trigger_event == 'deploy_frontend' }}
+          run: |
+            terraform plan -var-file="config/${{ github.event.inputs.environment}}.tfvars" -var="image_tag=${{ env.IMAGE_TAG }}"
         
         - name: 'Terraform Apply with Artifact'
-          if: inputs.trigger_pipeline == 'Java CI with Gradle'
+          if: ${{ inputs.trigger_event == 'deploy_backend' || inputs.trigger_event == 'deploy_frontend' }} 
           run: terraform apply -var-file="config/${{ github.event.inputs.environment}}.tfvars" -var="image_tag=${{ env.IMAGE_TAG }}" -auto-approve
 
         - name: 'Terraform Apply'
@@ -80,14 +92,16 @@ jobs:
           uses: actions/upload-artifact@v4
           with:
             name: docker-compose
-            path: modules/ec2/docker-compose.yaml
+            path: modules/ec2/templates/docker-compose.yaml
 
         - name: Get terraform outputs
-          if: inputs.trigger_pipeline == 'Java CI with Gradle'
+          if: ${{ inputs.trigger_event == 'deploy_backend' || inputs.trigger_event == 'deploy_frontend' }}
           id: tf-outputs
           run: |
             echo "INSTANCE_ID=$(terraform output -raw instance_this_id)" | tee -a $GITHUB_ENV > tf-outputs.env
             echo "ARTIFACT_S3_NAME=$(terraform output -raw bucket_artifact_name)" | tee -a $GITHUB_ENV >> tf-outputs.env
+            echo "FRONTEND_S3_NAME=$(terraform output -raw bucket_frontend_name)" | tee -a $GITHUB_ENV >> tf-outputs.env
+            echo "CF_ID=$(terraform output -raw cloudfront_distribution_id)" | tee -a $GITHUB_ENV >> tf-outputs.env
 
         - name: Upload terraform outputs as artifact
           uses: actions/upload-artifact@v4
