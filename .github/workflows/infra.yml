@@ -46,14 +46,14 @@ jobs:
 
   build-backend:
     if: github.event.inputs.action == 'build_backend' || github.event.inputs.action == 'deploy_backend'
-    uses: marinaimeninnik/eco-bites-back/.github/workflows/gradle.yml@docker-compose
+    uses: epm-pebt/back/.github/workflows/gradle.yml@CI-CD-restructured
     with:
       environment: ${{ github.event.inputs.environment }}
 
   deliver-backend:
     if: github.event.inputs.action == 'deploy_backend'
     needs: build-backend
-    uses: marinaimeninnik/eco-bites-infra/.github/workflows/infra-create.yaml@frontend_deployment
+    uses: epm-pebt/infra/.github/workflows/infra-create.yaml@CI-CD-restructured
     with:
       environment: ${{ github.event.inputs.environment }}
       trigger_event: ${{ github.event.inputs.action }}
@@ -61,7 +61,7 @@ jobs:
   deploy-backend:
     if: github.event.inputs.action == 'deploy_backend'
     needs: deliver-backend
-    uses: marinaimeninnik/eco-bites-back/.github/workflows/docker-deploy.yaml@docker-compose
+    uses: epm-pebt/back/.github/workflows/docker-deploy.yaml@CI-CD-restructured
     permissions:
       id-token: write
       contents: read
