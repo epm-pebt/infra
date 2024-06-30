@@ -18,8 +18,8 @@ on:
           - destroy
           - build_backend
           - deploy_backend
-          - build_frontend
-          - deploy_frontend
+          # - build_frontend
+          # - deploy_frontend
       environment:
         description: "Chose infrastructure environment to be created"
         required: true
@@ -50,6 +50,8 @@ jobs:
     with:
       environment: ${{ github.event.inputs.environment }}
 
+# TODO: try to make this step fitting for back and front deliver
+
   deliver-backend:
     if: github.event.inputs.action == 'deploy_backend'
     needs: build-backend
@@ -65,3 +67,13 @@ jobs:
     permissions:
       id-token: write
       contents: read
+
+# TODO: finish step beyond
+
+  # build-frontend:
+  #   if: github.event.inputs.action == 'build_frontend' || github.event.inputs.action == 'deploy_frontend'
+  #   needs: install-infra
+  #   uses: marinaimeninnik/eco-bites-front/.github/workflows/build-react.yaml@CI-CD_pipeline
+  #   permissions:
+  #     id-token: write
+  #     contents: read
