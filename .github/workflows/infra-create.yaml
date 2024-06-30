@@ -14,7 +14,7 @@ on:
         type: string
 
 jobs:
-  install-infra:
+  create-infra:
     permissions:
       id-token: write
       contents: read
@@ -28,8 +28,8 @@ jobs:
         - name: Check out GIT repository
           uses: actions/checkout@v4
           with:
-            repository: marinaimeninnik/eco-bites-infra
-            ref: frontend_deployment
+            repository: epm-pebt/infra
+            ref: CI-CD-restructured
            
         - name: Install Terraform
           uses: hashicorp/setup-terraform@v3                
