@@ -16,13 +16,17 @@ on:
         options:
           - create
           - destroy
+          - build_backend
+          - deploy_backend
+          - build_frontend
+          - deploy_frontend
       environment:
         description: "Chose infrastructure environment to be created"
         required: true
         type: choice
         options:
           - dev
-          # - prod
+          # - prod    
 
 permissions:
   id-token: write
@@ -30,11 +34,34 @@ permissions:
 
 jobs:
   install-infra:
-    if: github.event.inputs.action == 'create' || github.event_name == 'push' || github.event_name == 'pull_request'
+    if: github.event.inputs.action == 'create' || github.event_name == 'push' || github.event_name == 'pull_request' || github.event.inputs.action == 'deploy_frontend'
     uses: ./.github/workflows/infra-create.yaml
     with:
-      trigger_event: ${{ github.event_name }}
+      environment: ${{ github.event.inputs.environment }}
+      trigger_event: ${{ github.event.inputs.action }}
 
   uninstall-infra:
     if: github.event.inputs.action == 'destroy'
     uses: ./.github/workflows/infra-destroy.yaml
+
+  build-backend:
+    if: github.event.inputs.action == 'build_backend' || github.event.inputs.action == 'deploy_backend'
+    uses: marinaimeninnik/eco-bites-back/.github/workflows/gradle.yml@docker-compose
+    with:
+      environment: ${{ github.event.inputs.environment }}
+
+  deliver-backend:
+    if: github.event.inputs.action == 'deploy_backend'
+    needs: build-backend
+    uses: marinaimeninnik/eco-bites-infra/.github/workflows/infra-create.yaml@frontend_deployment
+    with:
+      environment: ${{ github.event.inputs.environment }}
+      trigger_event: ${{ github.event.inputs.action }}
+  
+  deploy-backend:
+    if: github.event.inputs.action == 'deploy_backend'
+    needs: deliver-backend
+    uses: marinaimeninnik/eco-bites-back/.github/workflows/docker-deploy.yaml@docker-compose
+    permissions:
+      id-token: write
+      contents: read
