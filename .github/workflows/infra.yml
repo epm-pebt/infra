@@ -52,7 +52,6 @@ jobs:
     #   contents: write
     with:
       environment: ${{ github.event.inputs.environment }}
-      token: ${{ secrets.GITHUB_TOKEN }}
 
 # TODO: try to make this step fitting for back and front deliver
 
