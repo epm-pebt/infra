@@ -47,11 +47,12 @@ jobs:
   build-backend:
     if: github.event.inputs.action == 'build_backend' || github.event.inputs.action == 'deploy_backend'
     uses: epm-pebt/back/.github/workflows/gradle.yml@CI-CD-restructured
-    permissions:
-      id-token: write
-      contents: write
+    # permissions:
+    #   id-token: write
+    #   contents: write
     with:
       environment: ${{ github.event.inputs.environment }}
+      token: ${{ secrets.GITHUB_TOKEN }}
 
 # TODO: try to make this step fitting for back and front deliver
 
