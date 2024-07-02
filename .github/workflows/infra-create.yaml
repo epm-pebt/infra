@@ -92,7 +92,7 @@ jobs:
           uses: actions/upload-artifact@v4
           with:
             name: docker-compose
-            path: modules/ec2/templates/docker-compose.yaml
+            path: modules/ec2/docker-compose.yaml
 
         - name: Get terraform outputs
           if: ${{ inputs.trigger_event == 'deploy_backend' || inputs.trigger_event == 'deploy_frontend' }}
